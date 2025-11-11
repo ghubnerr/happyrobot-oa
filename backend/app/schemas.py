@@ -3,11 +3,10 @@ Pydantic schemas for request/response validation.
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
 from datetime import datetime
 
 
-# Load Schemas
 class LoadBase(BaseModel):
     origin: str
     destination: str
@@ -46,7 +45,6 @@ class LoadSearchParams(BaseModel):
     available_only: bool = True
 
 
-# FMCSA Schemas
 class FMCSAVerifyRequest(BaseModel):
     mc_number: str = Field(..., description="Motor Carrier number to verify")
 
@@ -59,7 +57,6 @@ class FMCSAVerifyResponse(BaseModel):
     details: Optional[Dict[str, Any]] = None
 
 
-# Call Schemas
 class CallCreate(BaseModel):
     call_id: str
     carrier_mc_number: str
@@ -104,7 +101,6 @@ class CallResponse(BaseModel):
         from_attributes = True
 
 
-# Negotiation Schemas
 class NegotiationCreate(BaseModel):
     call_id: int
     round_number: int
@@ -126,7 +122,6 @@ class NegotiationResponse(BaseModel):
         from_attributes = True
 
 
-# Metrics Schemas
 class MetricsResponse(BaseModel):
     total_calls: int
     calls_by_outcome: Dict[str, int]
@@ -142,10 +137,7 @@ class MetricsResponse(BaseModel):
     calls_this_month: int
 
 
-# Webhook Schemas (for HappyRobot integration)
 class HappyRobotWebhook(BaseModel):
-    """Schema for HappyRobot webhook payload."""
-
     workflow_id: Optional[str] = None
     run_id: Optional[str] = None
     call_id: Optional[str] = None

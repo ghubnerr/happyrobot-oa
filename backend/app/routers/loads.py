@@ -1,9 +1,10 @@
 """
 Load management endpoints.
 """
+
 from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List
 
 from app.database import get_db
 from app.models import Load
@@ -37,25 +38,25 @@ def search_loads(
 ):
     """Search for available loads."""
     query = db.query(Load)
-    
+
     if params.available_only:
-        query = query.filter(Load.is_available == True)
-    
+        query = query.filter(Load.is_available)
+
     if params.origin:
         query = query.filter(Load.origin.ilike(f"%{params.origin}%"))
-    
+
     if params.destination:
         query = query.filter(Load.destination.ilike(f"%{params.destination}%"))
-    
+
     if params.equipment_type:
         query = query.filter(Load.equipment_type.ilike(f"%{params.equipment_type}%"))
-    
+
     if params.min_rate:
         query = query.filter(Load.loadboard_rate >= params.min_rate)
-    
+
     if params.max_rate:
         query = query.filter(Load.loadboard_rate <= params.max_rate)
-    
+
     return query.all()
 
 
@@ -68,7 +69,9 @@ def get_load(load_id: str, db: Session = Depends(get_db)):
     return load
 
 
-@router.put("/{load_id}", response_model=LoadResponse, dependencies=[Depends(verify_api_key)])
+@router.put(
+    "/{load_id}", response_model=LoadResponse, dependencies=[Depends(verify_api_key)]
+)
 def update_load(
     load_id: str,
     load_update: dict,
@@ -78,10 +81,10 @@ def update_load(
     load = db.query(Load).filter(Load.load_id == load_id).first()
     if not load:
         raise HTTPException(status_code=404, detail="Load not found")
-    
+
     for key, value in load_update.items():
         setattr(load, key, value)
-    
+
     db.commit()
     db.refresh(load)
     return load
@@ -93,8 +96,7 @@ def delete_load(load_id: str, db: Session = Depends(get_db)):
     load = db.query(Load).filter(Load.load_id == load_id).first()
     if not load:
         raise HTTPException(status_code=404, detail="Load not found")
-    
+
     db.delete(load)
     db.commit()
     return {"message": "Load deleted successfully"}
-
