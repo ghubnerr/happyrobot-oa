@@ -10,6 +10,7 @@ from app.database import get_db
 from app.models import Load
 from app.schemas import LoadCreate, LoadResponse, LoadSearchParams
 from app.config import settings
+from app.retrievers import HybridLoadRetriever
 
 router = APIRouter()
 
@@ -31,36 +32,119 @@ def create_load(load: LoadCreate, db: Session = Depends(get_db)):
     return db_load
 
 
-@router.get("/", response_model=List[LoadResponse])
+@router.get(
+    "/", response_model=List[LoadResponse], dependencies=[Depends(verify_api_key)]
+)
 def search_loads(
     params: LoadSearchParams = Depends(),
     db: Session = Depends(get_db),
 ):
-    """Search for available loads."""
+    """Search for available loads using hybrid BM25 + embedding retrieval."""
     query = db.query(Load)
 
     if params.available_only:
         query = query.filter(Load.is_available)
 
+    loads = query.all()
+
+    if not loads:
+        return []
+
+    query_dict = {}
     if params.origin:
-        query = query.filter(Load.origin.ilike(f"%{params.origin}%"))
-
+        query_dict["origin"] = params.origin
     if params.destination:
-        query = query.filter(Load.destination.ilike(f"%{params.destination}%"))
-
+        query_dict["destination"] = params.destination
     if params.equipment_type:
-        query = query.filter(Load.equipment_type.ilike(f"%{params.equipment_type}%"))
+        query_dict["equipment_type"] = params.equipment_type
+    if params.commodity_type:
+        query_dict["commodity_type"] = params.commodity_type
+    if params.notes:
+        query_dict["notes"] = params.notes
+
+    if not query_dict:
+        if params.min_rate:
+            loads = [x for x in loads if x.loadboard_rate >= params.min_rate]
+        if params.max_rate:
+            loads = [x for x in loads if x.loadboard_rate <= params.max_rate]
+        return loads
+
+    retriever = HybridLoadRetriever(loads)
+    top_k = params.top_k or 10
+    results = retriever.search(query_dict, top_k=top_k)
+
+    matched_loads = [load for load, score in results]
 
     if params.min_rate:
-        query = query.filter(Load.loadboard_rate >= params.min_rate)
-
+        matched_loads = [
+            x for x in matched_loads if x.loadboard_rate >= params.min_rate
+        ]
     if params.max_rate:
-        query = query.filter(Load.loadboard_rate <= params.max_rate)
+        matched_loads = [
+            x for x in matched_loads if x.loadboard_rate <= params.max_rate
+        ]
 
-    return query.all()
+    return matched_loads
 
 
-@router.get("/{load_id}", response_model=LoadResponse)
+@router.post(
+    "/neural-search",
+    response_model=List[LoadResponse],
+    dependencies=[Depends(verify_api_key)],
+)
+def neural_search(
+    params: LoadSearchParams,
+    db: Session = Depends(get_db),
+):
+    """Neural search endpoint using hybrid BM25 + embedding retrieval."""
+    loads = db.query(Load).all()
+
+    if params.available_only:
+        loads = [x for x in loads if x.is_available]
+
+    if not loads:
+        return []
+
+    query_dict = {}
+    if params.origin:
+        query_dict["origin"] = params.origin
+    if params.destination:
+        query_dict["destination"] = params.destination
+    if params.equipment_type:
+        query_dict["equipment_type"] = params.equipment_type
+    if params.commodity_type:
+        query_dict["commodity_type"] = params.commodity_type
+    if params.notes:
+        query_dict["notes"] = params.notes
+
+    if not query_dict:
+        if params.min_rate:
+            loads = [x for x in loads if x.loadboard_rate >= params.min_rate]
+        if params.max_rate:
+            loads = [x for x in loads if x.loadboard_rate <= params.max_rate]
+        return loads
+
+    retriever = HybridLoadRetriever(loads)
+    top_k = params.top_k or 10
+    results = retriever.search(query_dict, top_k=top_k)
+
+    matched_loads = [load for load, score in results]
+
+    if params.min_rate:
+        matched_loads = [
+            x for x in matched_loads if x.loadboard_rate >= params.min_rate
+        ]
+    if params.max_rate:
+        matched_loads = [
+            x for x in matched_loads if x.loadboard_rate <= params.max_rate
+        ]
+
+    return matched_loads
+
+
+@router.get(
+    "/{load_id}", response_model=LoadResponse, dependencies=[Depends(verify_api_key)]
+)
 def get_load(load_id: str, db: Session = Depends(get_db)):
     """Get a specific load by ID."""
     load = db.query(Load).filter(Load.load_id == load_id).first()

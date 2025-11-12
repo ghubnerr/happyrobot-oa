@@ -40,9 +40,12 @@ class LoadSearchParams(BaseModel):
     origin: Optional[str] = None
     destination: Optional[str] = None
     equipment_type: Optional[str] = None
+    commodity_type: Optional[str] = None
+    notes: Optional[str] = None
     min_rate: Optional[float] = None
     max_rate: Optional[float] = None
     available_only: bool = True
+    top_k: Optional[int] = 10  # Number of results to return from neural search
 
 
 class FMCSAVerifyRequest(BaseModel):
