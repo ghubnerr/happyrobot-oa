@@ -59,63 +59,6 @@ def search_loads(
         query_dict["equipment_type"] = params.equipment_type
     if params.commodity_type:
         query_dict["commodity_type"] = params.commodity_type
-    if params.notes:
-        query_dict["notes"] = params.notes
-
-    if not query_dict:
-        if params.min_rate:
-            loads = [x for x in loads if x.loadboard_rate >= params.min_rate]
-        if params.max_rate:
-            loads = [x for x in loads if x.loadboard_rate <= params.max_rate]
-        return loads
-
-    retriever = HybridLoadRetriever(loads)
-    top_k = params.top_k or 10
-    results = retriever.search(query_dict, top_k=top_k)
-
-    matched_loads = [load for load, score in results]
-
-    if params.min_rate:
-        matched_loads = [
-            x for x in matched_loads if x.loadboard_rate >= params.min_rate
-        ]
-    if params.max_rate:
-        matched_loads = [
-            x for x in matched_loads if x.loadboard_rate <= params.max_rate
-        ]
-
-    return matched_loads
-
-
-@router.post(
-    "/neural-search",
-    response_model=List[LoadResponse],
-    dependencies=[Depends(verify_api_key)],
-)
-def neural_search(
-    params: LoadSearchParams,
-    db: Session = Depends(get_db),
-):
-    """Neural search endpoint using hybrid BM25 + embedding retrieval."""
-    loads = db.query(Load).all()
-
-    if params.available_only:
-        loads = [x for x in loads if x.is_available]
-
-    if not loads:
-        return []
-
-    query_dict = {}
-    if params.origin:
-        query_dict["origin"] = params.origin
-    if params.destination:
-        query_dict["destination"] = params.destination
-    if params.equipment_type:
-        query_dict["equipment_type"] = params.equipment_type
-    if params.commodity_type:
-        query_dict["commodity_type"] = params.commodity_type
-    if params.notes:
-        query_dict["notes"] = params.notes
 
     if not query_dict:
         if params.min_rate:
