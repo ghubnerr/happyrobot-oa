@@ -12,7 +12,6 @@ RUN uv pip install --system -r requirements.txt
 
 COPY backend/app ./app
 COPY backend/scripts ./scripts
-COPY backend/carrier_sales.db ./carrier_sales.db
 
 EXPOSE 8000
 
