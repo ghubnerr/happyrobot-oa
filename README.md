@@ -7,8 +7,6 @@ A HappyRobot platform integration for automating inbound carrier load sales call
 ```
 happyrobot/
 ├── backend/          # FastAPI backend service
-├── frontend/         # React dashboard
-├── infrastructure/   # Terraform for GCP deployment
 ├── docs/            # HappyRobot platform documentation
 └── docker-compose.yml
 ```
@@ -16,8 +14,6 @@ happyrobot/
 ## Tech Stack
 
 - **Backend**: Python 3.11+, FastAPI, SQLite, uv
-- **Frontend**: React, TypeScript
-- **Infrastructure**: Docker, Terraform, GCP
 - **Platform**: HappyRobot (for voice AI agent)
 
 ## Quick Start
