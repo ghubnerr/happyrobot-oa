@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     """Application settings."""
 
     API_V1_PREFIX: str = "/api/v1"
-    API_KEY: str = "dev-api-key-change-in-production"
+    API_KEY: str = ""
 
     DATABASE_URL: str = "sqlite:///./carrier_sales.db"
 
